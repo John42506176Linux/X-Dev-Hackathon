@@ -78,4 +78,28 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  .explore-element {
+    transition: order 1.5s ease;
+  }
+
+  .list {
+    position: relative;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .card {
+    position: absolute;
+    will-change: transform, height, opacity;
+    width: 100%;
+  }
+
+  .cell {
+    position: relative;
+  }
+
+  .details {
+    position: relative;
+  }
+
 }
