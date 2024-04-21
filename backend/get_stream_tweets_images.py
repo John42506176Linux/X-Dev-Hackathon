@@ -222,7 +222,7 @@ def get_filtered_stream():
             if len(tweets_data) == 15:
                 try:
                     cleaned_tweets_data = [(image,tweet) for image,tweet in tweets_data if tweet != '' and is_english(tweet) ]
-                    images = [image for image, tweet in cleaned_tweets_data]
+                    cleaned_images_data = [(image,tweet) for image,tweet in tweets_data if image is not None]
                     tweets = [tweet for image, tweet in cleaned_tweets_data]
                     tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet in cleaned_tweets_data ]
                     text_embeddings =[embedding[1] for embedding in tweet_embeddings]
