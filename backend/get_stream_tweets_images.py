@@ -129,11 +129,11 @@ def set_rules(topic):
         )
     print(json.dumps(response.json()))
 
-def upload_embedding(vectors):
+def upload_embedding(vectors, index):
     api_key = os.environ["PINECONE_API_KEY"]
     pinecone = Pinecone(api_key=api_key)
 
-    index = pinecone.Index('streamed-tweets')
+    index = pinecone.Index(index)
     index.upsert(vectors=vectors)
 
 def remove_twitter_images(text):
@@ -235,23 +235,40 @@ def get_filtered_stream():
                     tweet_ids = [tweetid for image, tweet, tweetid in cleaned_tweets_data]
                     tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_tweets_data ]
                     text_embeddings =[embedding[1] for embedding in tweet_embeddings]
-                    # image_embeddings = [embedding[0] for embedding in tweet_embeddings]
+
+                    images = [image for image, tweet, tweetid in cleaned_images_data]
+                    image_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_images_data ]
+                    image_embeddings = [embedding[0] for embedding in image_embeddings]
                     # print("Embedded tweets")
                     print(f"Cleaned tweets:{len(tweets)}")
                     topic_model.partial_fit(tweets,embeddings=np.array(text_embeddings))
                     topic_model.topic_embeddings_
                     print(topic_model.get_topic_info())
+                except Exception as e:
+                    print("Couldn't update model")
 
+                try:
                     # Upload to pinecone
                     values = [{
 						'id': tweetid,
 						'metadata': {'text': tweet},
 						'values': tweet_emb
 					} for tweetid, tweet, tweet_emb in zip(tweet_ids, tweets, text_embeddings)]
-                    upload_embedding(values)
-                    
+                    upload_embedding(values, 'streamed-tweets')
+                    print(f'Uploaded {len(values)} tweets to pinecone')
+
+                    # Upload image embeddings with image_link as metadata (saes in cleaned_images_data)
+                    values = [{
+                        'id': tweetid,
+                        'metadata': {'image': image},
+                        'values': image_emb
+                    } for tweetid, image, image_emb in zip(tweet_ids, images, image_embeddings)]
+                    if values:
+                        upload_embedding(values, 'streamed-images')
+                    print(f'Uploaded {len(values)} images to pinecone')
                 except Exception as e:
-                    print("Couldn't update model")
+                    print("Couldn't upload to pinecone")
+
                 tweets_data.clear()
 
                 
