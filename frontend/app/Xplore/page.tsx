@@ -7,20 +7,67 @@ import Image from "next/image"
 import {Button} from "@/components/ui/button"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/components/ui/card"
 import {ScrollArea, ScrollBar} from '@/components/ui/scroll-area'
+import TwitterPost from '@/components/twitter-post'
+import {Tweet, tweets} from '@/components/data/posts'
+// @ts-ignore
+function useWebSocket(url, maxRetries = 10, retryDelay = 60000) {
+  let retries = 0;
+  const [data, setData] = useState(null);
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    const ws = new WebSocket(url);
+    const connect = () => {
+      const socket = new WebSocket(url);
+    }
+
+    ws.onopen = () => {
+      // @ts-ignore
+      setSocket(ws);
+    };
+
+    ws.onmessage = (event) => {
+      setData(JSON.parse(event.data));
+      console.log(JSON.parse(event.data))
+    };
+
+    ws.onclose = () => {
+      if (retries < maxRetries) {
+        setTimeout(connect, retryDelay);
+        retries++;
+      }
+    };
+    return () => {
+      if (ws.readyState === 1) {
+        ws.close();
+      }
+    }
+  }, [url]);
+
+  // @ts-ignore
+  const sendMessage = (data) => {
+    if (socket) {
+      // @ts-ignore
+      socket.send(JSON.stringify(data));
+    }
+  };
+
+  return [data, sendMessage];
+}
 
 export interface Artwork {
   artist: string
   art: string
 }
 
-export interface Tweet {
-  profilePic: string
-  userName: string
-  handle: string
-  content: string
-  timestamp: string
-  likes: number
-}
+// export interface Tweet {
+//   profilePic: string
+//   userName: string
+//   handle: string
+//   content: string
+//   timestamp: string
+//   likes: number
+// }
 
 export interface Topic {
   title: string
@@ -28,32 +75,32 @@ export interface Topic {
   link: string
 }
 
-const tweets: Tweet[] = [
-  {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: "$GMale",
-    handle: "laptopcrust",
-    content: "thinkin of my next tweet",
-    timestamp: "Today at 3:32 PM",
-    likes: 0
-  },
-  {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: 'Twitter',
-    handle: 'Twitter',
-    content: 'Happy 3rd anniversary #TBT! See how "Throwback Thursday" cemented its status as a weekly Twitter tradition:',
-    timestamp: '6:26 PM - Apr 30, 2015',
-    likes: 0
-  },
-  {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: "$GMale",
-    handle: "laptopcrust",
-    content: "thinkin of my next tweet",
-    timestamp: "Today at 3:32 PM",
-    likes: 0
-  },
-]
+// const tweets: Tweet[] = [
+//   {
+//     profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+//     userName: "$GMale",
+//     handle: "laptopcrust",
+//     content: "thinkin of my next tweet",
+//     timestamp: "Today at 3:32 PM",
+//     likes: 0
+//   },
+//   {
+//     profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+//     userName: 'Twitter',
+//     handle: 'Twitter',
+//     content: 'Happy 3rd anniversary #TBT! See how "Throwback Thursday" cemented its status as a weekly Twitter tradition:',
+//     timestamp: '6:26 PM - Apr 30, 2015',
+//     likes: 0
+//   },
+//   {
+//     profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+//     userName: "$GMale",
+//     handle: "laptopcrust",
+//     content: "thinkin of my next tweet",
+//     timestamp: "Today at 3:32 PM",
+//     likes: 0
+//   },
+// ]
 const works: Artwork[] = [
   {
     artist: "Ornella Binni",
@@ -85,34 +132,7 @@ const topics: Topic[] = [
       link: "",
   },
 ]
-class TwitterPost extends React.Component<({
-  profilePic: string,
-  userName: string,
-  handle: string,
-  content: any,
-  timestamp: string
-})> {
-  render() {
-    let {profilePic, userName, handle, content, timestamp} = this.props;
-    return (
-      <div className="flex min-h-40 place-items-center border border-gray-200 p-4 rounded-lg mb-5">
-        <img
-          src={profilePic}
-          alt={`${userName}'s profile pic`}
-          className="w-12 h-12 rounded-full mr-4"
-        />
-        <div className="flex-1">
-          <div className="flex items-center">
-            <a href="" className="font-bold mr-2">{userName}</a>
-            <a href="" className="text-gray-500">@{handle}</a>
-          </div>
-          <p className="max-w-sm place-content-center text-wrap mb-2 mt-2">{content}</p>
-          <span className="text-gray-500 text-sm">{timestamp}</span>
-        </div>
-      </div>
-    );
-  }
-}
+
 
   // useEffect(()=> {
   //   window.addEventListener('resize', ()=> {
@@ -179,9 +199,11 @@ class TopicBlock extends React.Component<({
 }
 
 export function List() {
+  const [socketData, sendSocketMessage] = useWebSocket('ws://127.0.0.1:8000/ws/3293358400');
   const [rows, set] = useState(topics)
   useEffect(() => {
     const t = setInterval(() => set(shuffle), 8000)
+    console.log(socketData)
     return () => clearInterval(t)
   }, [])
 
