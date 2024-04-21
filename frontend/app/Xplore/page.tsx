@@ -131,13 +131,14 @@ export function List(userID) {
     const fetchData = async () => {
       // ... (Change the fetch part with Axios)
       try {
-        const response = await axios.get('localhost:8000/initial_topics/'+{userID});
+        const response = await axios.get('http://127.0.0.1:8000/initial_topics/3293358400');
         setData(response.data); // Axios automatically parses JSON
         console.log(response.data);
       } catch (err) {
         // Axios provides more specific error info
         // @ts-ignore
         setError(err.message);
+        console.log(err.message);
       } finally {
         setLoading(false);
         console.log(data);
