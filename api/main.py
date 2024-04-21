@@ -1,4 +1,5 @@
 import os
+import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from user_tweets import get_tweets_and_likes, get_twitter_user_by_username
 from text_embedding import get_text_embedding
@@ -32,6 +33,7 @@ app.add_middleware(
 vertexai.init(project='x-dev-hackath', location="us-central1")
 
 TOPIC_RANKING = {}
+SEEN = set()
 
 @app.get("/username")
 async def get_username(username: str):
@@ -62,6 +64,9 @@ async def get_username(username: str):
 
 @app.get("/initial_topics/{user_id}")
 async def get_initial_topics(user_id: str):
+    if user_id in SEEN:
+        return {"data": []}
+    SEEN.add(user_id)
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)
     global TOPIC_RANKING
