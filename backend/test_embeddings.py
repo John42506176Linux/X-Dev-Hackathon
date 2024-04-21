@@ -72,9 +72,3 @@ print(embed_text())
 embeddings= get_image_embeddings('https://pbs.twimg.com/media/GLn3SieXQAAib6y?format=jpg&name=medium','KIZARU... 😎')
 print(f"Image Embeddings:{embeddings[0]}")
 print(f"Text Embeddings:{embeddings[1]}")
-
-
-# model = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
-
-# message = "What are some of the pros and cons of Python as a programming language?"
-# print(model.invoke(message).content)

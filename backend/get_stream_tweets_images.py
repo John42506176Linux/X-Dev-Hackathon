@@ -5,7 +5,9 @@ import time
 import random
 from dotenv import load_dotenv
 import re
-
+from PIL import Image
+import requests
+from io import BytesIO
 
 load_dotenv()  
 
