@@ -1,21 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useTransition, animated } from '@react-spring/web'
+import React, {useEffect, useState} from 'react'
+import {animated, useTransition} from '@react-spring/web'
 import shuffle from "lodash.shuffle"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import Link from "next/link";
+import {Button} from "@/components/ui/button"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/components/ui/card"
 import {ScrollArea, ScrollBar} from '@/components/ui/scroll-area'
-import {resolveViewport} from "next/dist/lib/metadata/resolvers/resolve-basics";
 
 export interface Artwork {
   artist: string
@@ -31,7 +22,12 @@ export interface Tweet {
   likes: number
 }
 
-// @nextjs-ignore
+export interface Topic {
+  title: string
+  numberOfPosts: number
+  link: string
+}
+
 const tweets: Tweet[] = [
   {
     profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
@@ -72,8 +68,30 @@ const works: Artwork[] = [
     art: "https://images.unsplash.com/photo-1494337480532-3725c85fd2ab?auto=format&fit=crop&w=300&q=80",
   },
 ]
-
-class TwitterPost extends React.Component<({ profilePic: any, userName: any, handle: any, content: any, timestamp: any })> {
+const topics: Topic[] = [
+  {
+      title: "Fans upset over new Jujutsu Kaisen chapter leak",
+      numberOfPosts: 2044,
+      link: "",
+  },
+  {
+      title: "Yuji gets a new technique",
+      numberOfPosts: 15942,
+      link: "",
+  },
+  {
+      title: "Dodgers vs. Padres has fans in shambles",
+      numberOfPosts: 1942,
+      link: "",
+  },
+]
+class TwitterPost extends React.Component<({
+  profilePic: string,
+  userName: string,
+  handle: string,
+  content: any,
+  timestamp: string
+})> {
   render() {
     let {profilePic, userName, handle, content, timestamp} = this.props;
     return (
@@ -96,119 +114,97 @@ class TwitterPost extends React.Component<({ profilePic: any, userName: any, han
   }
 }
 
-
-
-class ExploreCard extends React.Component<({profilePic: any, userName: any, handle: any, content: any, timestamp: any })> {
-  render() {
-    let {profilePic, userName, handle, content, timestamp} = this.props;
-    return (
-      <Card className="sm:col-span-2">
-        <CardHeader className="pb-3">
-          <CardTitle>#{handle}</CardTitle>
-          <CardDescription className="max-w-lg text-balance leading-relaxed">
-            This is a brief description of the topic.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-
-        </CardContent>
-        <CardFooter>
-          <Button>Explore</Button>
-        </CardFooter>
-      </Card>
-    );
-  }
-}
-
-export function TopicBlock() {
   // useEffect(()=> {
   //   window.addEventListener('resize', ()=> {
   //     // console.log(window.innerHeight, window.innerWidth)
   //   })
   // }, [])
   // @ts-ignore
-  return (
-    <ScrollArea className="ease-in w-full whitespace-nowrap rounded-md border">
-      <Card className="sm:col-span-2">
-        <CardHeader className="pb-3">
-          <CardTitle>#jjk</CardTitle>
-          <CardDescription className="max-w-lg text-balance leading-relaxed">
-            Gege robs his fans.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex w-max space-x-4 p-4">
-            {works.map((artwork) => (
-              <figure key={artwork.artist} className="shrink-0">
-                <div className="overflow-hidden rounded-md">
-                  <Image
-                    src={artwork.art}
-                    alt={`Photo by ${artwork.artist}`}
-                    /*set w-[250px] to a variable that updates for desktop + mobile*/
-                    className="space-y-3 h-[225px] w-[225px]"
-                    width={225}
-                    height={225}
-                  />
-                </div>
-                <figcaption className="pt-2 text-xs text-muted-foreground">
-                  Photo by{" "}
-                  <span className="font-semibold text-foreground">
-                {artwork.artist}
+// export function TopicBlock() {
+class TopicBlock extends React.Component<({
+  topic: Topic,
+})> {
+  render() {
+    // let {profilePic, userName, handle, content, timestamp, topic} = this.props;
+    let {topic} = this.props;
+    return (
+      <ScrollArea className="ease-in w-full whitespace-nowrap rounded-md border">
+        <Card className="sm:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle>#{topic.title}</CardTitle>
+            <CardDescription className="max-w-lg text-balance leading-relaxed">
+              <span className="pt-2 text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{topic.numberOfPosts}</span>k posts
               </span>
-                </figcaption>
-              </figure>
-            ))}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex w-max space-x-4 p-4">
+              {works.map((artwork) => (
+                <figure key={artwork.artist} className="shrink-0">
+                  <div className="overflow-hidden rounded-md">
+                    <Image
+                      src={artwork.art}
+                      alt={`Photo by ${artwork.artist}`}
+                      /*set w-[250px] to a variable that updates for desktop + mobile*/
+                      className="space-y-3 h-[225px] w-[225px]"
+                      width={225}
+                      height={225}
+                    />
+                  </div>
+                  <figcaption className="pt-2 text-xs text-muted-foreground">
+                    Photo by{" "}<span className="font-semibold text-foreground">{artwork.artist}</span>
+                  </figcaption>
+                </figure>
+              ))}
 
-            {tweets.map((tweet) => (
-              <><div className="shrink place-content-center">
-                <TwitterPost key={tweet.content} {...tweet} />
-              </div></>
-            ))}
-            <div className="flex min-h-40 place-items-center p-4 rounded-lg mb-5">
-              <Button className="shrink place-content-center min-h-40 place-items-center">See more</Button>
+              {tweets.map((tweet) => (
+                <>
+                  <div className="shrink place-content-center">
+                    <TwitterPost key={tweet.content} {...tweet} />
+                  </div>
+                </>
+              ))}
+              <div className="flex min-h-40 place-items-center p-4 rounded-lg mb-5">
+                <Button className="shrink place-content-center min-h-40 place-items-center">See more</Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <ScrollBar orientation="horizontal"/>
-    </ScrollArea>
-  )
+          </CardContent>
+        </Card>
+        <ScrollBar orientation="horizontal"/>
+      </ScrollArea>
+    );
+  }
 }
 
-let data = [
-  { id: 1, content: <TopicBlock />, rank: 3 },
-  { id: 2, content: <TopicBlock />, rank: 1 },
-  { id: 3, content: <TopicBlock />, rank: 2 },
-
-  // ... more elements, initially sorted by rank
-];
-
 export function List() {
-  const [rows, set] = useState(data)
+  const [rows, set] = useState(topics)
   useEffect(() => {
-    const t = setInterval(() => set(shuffle), 2000)
+    const t = setInterval(() => set(shuffle), 8000)
     return () => clearInterval(t)
   }, [])
 
   let height = 0
   let heightCard = 400
   const transitions = useTransition(
-    rows.map(data => ({ ...data, y: (height += heightCard) - heightCard })),
+    rows.map(topics => ({...topics, y: (height += heightCard) - heightCard})),
     {
       key: (item: any) => item.id,
-      from: { height: 0, opacity: 0 },
-      leave: { height: 0, opacity: 0 },
-      enter: ({ y, height = 500 }) => ({ y, height, opacity: 1 }),
-      update: ({ y, height = 500 }) => ({ y, height }),
+      from: {height: 0, opacity: 0},
+      leave: {height: 0, opacity: 0},
+      // @ts-ignore
+      enter: ({y, height = 500}) => ({y, height, opacity: 1}),
+      // @ts-ignore
+      update: ({y, height = 500}) => ({y, height}),
     }
   )
 
   return (
-    <div className="list" style={{ height }}>
+    <div className="list" style={{height}}>
       {transitions((style, item, t, index) => (
-        <animated.div className="card" style={{ zIndex: data.length - index, ...style }}>
+        <animated.div className="card" style={{zIndex: topics.length - index, ...style}}>
           <div className="cell">
-            <TopicBlock />
+            <TopicBlock topic={topics[index]}/>
           </div>
         </animated.div>
       ))}
@@ -217,15 +213,15 @@ export function List() {
 }
 
 export default function ExplorePage() {
-    // const [transitions, api] = useTransition(data, () => ({
-    //   from: { opacity: 0 },
-    //   enter: { opacity: 1 },
-    //   leave: { opacity: 1 },
-    // }))
-    //
-    // return transitions((style, item) => (
-    //   <animated.div style={style}>{item}</animated.div>
-    // ))
-  return <List />
+  // const [transitions, api] = useTransition(data, () => ({
+  //   from: { opacity: 0 },
+  //   enter: { opacity: 1 },
+  //   leave: { opacity: 1 },
+  // }))
+  //
+  // return transitions((style, item) => (
+  //   <animated.div style={style}>{item}</animated.div>
+  // ))
+  return <List/>
 
 }
