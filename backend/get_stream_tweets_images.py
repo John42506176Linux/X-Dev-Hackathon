@@ -20,6 +20,7 @@ import openai
 import tiktoken
 import pandas as pd
 from langdetect import detect, LangDetectException
+from query_pinecone import get_top_similarity_score,get_top_k_images,get_top_k_tweets
 from pinecone import Pinecone
 
 
@@ -203,6 +204,8 @@ def get_filtered_stream():
     pd.set_option('display.max_columns', None)    # No limit on the number of columns displayed
     pd.set_option('display.width', None)          # Automatically set the display width to accommodate the maximum line width
     pd.set_option('display.max_colwidth', None)   # Display the full content of each column without truncation
+    topics = []
+    documents = []
     for response_line in response.iter_lines():
         if response_line:
             json_response = json.loads(response_line)
@@ -227,7 +230,7 @@ def get_filtered_stream():
             print(f"Number of Tweets:{len(tweets_data)}")
             print(f'Tweet:{json_response["data"]["text"]}')
             print(f'Tweet Language:{is_english(json_response["data"]["text"])}')
-            if len(tweets_data) == 15:
+            if len(tweets_data) == 10:
                 try:
                     cleaned_tweets_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if tweet != '' and is_english(tweet) ]
                     cleaned_images_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if image is not None]
@@ -241,10 +244,13 @@ def get_filtered_stream():
                     image_embeddings = [embedding[0] for embedding in image_embeddings]
                     # print("Embedded tweets")
                     print(f"Cleaned tweets:{len(tweets)}")
-                    topic_model.partial_fit(tweets,embeddings=np.array(text_embeddings))
-                    topic_model.topic_embeddings_
-                    print(topic_model.get_topic_info())
+                    documents.extend(tweets)
+                    topic_model.partial_fit(documents,embeddings=np.array(text_embeddings))
+                    top_topics = get_top_topics(topic_model)
+                    print(f"FULL INFO:{json.dumps(get_full_topic_info(top_topics),indent=4)}")
+                    topics.extend(topic_model.topics_)
                 except Exception as e:
+                    print(f"Exception:{e}")
                     print("Couldn't update model")
 
                 try:
@@ -256,7 +262,6 @@ def get_filtered_stream():
 					} for tweetid, tweet, tweet_emb in zip(tweet_ids, tweets, text_embeddings)]
                     upload_embedding(values, 'streamed-tweets')
                     print(f'Uploaded {len(values)} tweets to pinecone')
-
                     # Upload image embeddings with image_link as metadata (saes in cleaned_images_data)
                     values = [{
                         'id': tweetid,
@@ -270,7 +275,37 @@ def get_filtered_stream():
                     print("Couldn't upload to pinecone")
 
                 tweets_data.clear()
+        topic_model.topics_ = topics
 
+def get_full_topic_info(topics):
+    return [
+        {
+            'representation': repres,
+            'top_image': get_top_k_images(embedding, k=1),
+            'top_tweets': get_top_k_tweets(embedding, k=3)
+        }
+        for embedding, repres in topics
+    ]
+
+def get_top_topics(topic_model, top_n=3):
+    # Extract topic embeddings and representations
+    topic_embeddings = topic_model.topic_embeddings_
+    topic_representations = topic_model.topic_representations_
+    # List to store topics and their scores
+    topic_scores = []
+    
+    # Calculate scores for each topic embedding
+    for i, topic in enumerate(topic_embeddings):
+        score = get_top_similarity_score(topic,"3293358400")
+        topic_scores.append((score, i))
+    
+    # Sort topics by score in descending order (higher scores are more central/significant)
+    topic_scores.sort(reverse=True, key=lambda x: x[0])
+    
+    # Fetch the top_n topics based on their scores
+    top_topics = [(topic_embeddings[i], topic_representations[i][0]) for _, i in topic_scores[:top_n]]
+    
+    return top_topics
                 
 
 def main():

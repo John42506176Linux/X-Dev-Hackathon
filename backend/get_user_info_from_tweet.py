@@ -2,6 +2,9 @@ import requests
 import json
 import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_user_id_from_tweet_id(tweet_id, bearer_token):
     """
@@ -11,7 +14,7 @@ def get_user_id_from_tweet_id(tweet_id, bearer_token):
     :param bearer_token: A valid Twitter API bearer token
     :return: The user ID of the tweet's author
     """
-    url = f"https://api.twitter.com/2/tweets?ids={tweet_id}&expansions=author_id&user.fields=profile_image_url,created_at"
+    url = f"https://api.twitter.com/2/tweets?ids={tweet_id}&expansions=author_id&user.fields=profile_image_url"
     headers = {
         "Authorization": f"Bearer {bearer_token}"
     }
@@ -21,7 +24,7 @@ def get_user_id_from_tweet_id(tweet_id, bearer_token):
     if response.status_code == 200:
         data = response.json()
         user = data['includes']['users'][0]
-        print(user)
+        return user
     else:
         print('FAILED')
         print(response.json())
