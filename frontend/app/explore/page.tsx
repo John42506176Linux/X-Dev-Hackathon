@@ -127,6 +127,7 @@ class TopicBlock extends React.Component<({
   render() {
     // let {profilePic, userName, handle, content, timestamp, topic} = this.props;
     let {topic} = this.props;
+    console.log()
     return (
       <ScrollArea className="ease-in w-full whitespace-nowrap rounded-md border">
         <Card className="sm:col-span-2">

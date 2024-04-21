@@ -1,39 +1,49 @@
+"use client"
 import Link from "next/link"
-
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { siteConfig } from "@/config/site"
 import { buttonVariants } from "@/components/ui/button"
 
 export default function IndexPage() {
   return (
-    <section className="container grid items-center gap-6 pb-8 pt-6 md:py-10">
-      <div className="flex max-w-[980px] flex-col items-start gap-2">
-        <h1 className="text-3xl font-extrabold leading-tight tracking-tighter md:text-4xl">
-          Beautifully designed components <br className="hidden sm:inline" />
-          built with Radix UI and Tailwind CSS.
-        </h1>
-        <p className="max-w-[700px] text-lg text-muted-foreground">
-          Accessible and customizable components that you can copy and paste
-          into your apps. Free. Open Source. And Next.js 13 Ready.
-        </p>
+    // <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
+    <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-1 xl:min-h-[800px]">
+      <div className="flex items-center justify-center py-12">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">Welcome.</h1>
+            <p className="text-balance text-muted-foreground">
+              Enter your X handle below.
+            </p>
+          </div>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              {/*<Label htmlFor="handle">Handle</Label>*/}
+              <Input
+                id="handle"
+                type="text"
+                placeholder="@laptopcrust"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Explore
+            </Button>
+          </div>
+        </div>
       </div>
-      <div className="flex gap-4">
-        <Link
-          href={siteConfig.links.docs}
-          target="_blank"
-          rel="noreferrer"
-          className={buttonVariants()}
-        >
-          Documentation
-        </Link>
-        <Link
-          target="_blank"
-          rel="noreferrer"
-          href={siteConfig.links.github}
-          className={buttonVariants({ variant: "outline" })}
-        >
-          GitHub
-        </Link>
-      </div>
-    </section>
+      {/*<div className="hidden bg-muted lg:block">*/}
+      {/*  <Image*/}
+      {/*    src="/placeholder.svg"*/}
+      {/*    alt="Image"*/}
+      {/*    width="1920"*/}
+      {/*    height="1080"*/}
+      {/*    className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"*/}
+      {/*  />*/}
+      {/*</div>*/}
+    </div>
   )
 }
