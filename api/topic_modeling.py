@@ -1,10 +1,26 @@
 import os
+import math
 import numpy as np
 from hdbscan import HDBSCAN
 from bertopic import BERTopic
 import openai
 import tiktoken
 from bertopic.representation import OpenAI
+
+PROMPT = """
+I have topic that contains the following documents: \n[DOCUMENTS]
+The topic is described by the following keywords: [KEYWORDS]
+
+Based on the above information, can you give a short label of the topic?
+
+The topic should be 1 or 2 words max, here are some examples:
+    - Bengals
+    - Climate Change
+    - FISA
+    - JJK
+    - One Piece
+    - Humane AI
+"""
 
 PROMPT = """
 I have topic that contains the following documents: \n[DOCUMENTS]
@@ -20,7 +36,7 @@ The topics should have optinions based on the documents and keywords. Here are s
     - Netflix's One Piece Review: A Not-Quite Grand Line
     - Humane AI Pin Reveals its Fatal Flaw
 
-Keep the topic down to about 5 words and make sure it is immediately usable as a title.
+Keep the topic down to about 5-6 words and make sure it is immediately usable as a title.
 """
 
 def generate_topics(embeddings: list, text: list):
@@ -60,5 +76,12 @@ def generate_topics(embeddings: list, text: list):
 		documents=text
 	)
 
-	return topic_model.topic_embeddings_
+	topic_names = list(topic_model.get_topic_info()['Name'])
+	topics = list()
+	# each topic starts with a number_ like '0_topic' so remove it with a log 10 function
+	for i, topic in enumerate(topic_names):
+		index_len = math.floor(math.log10(i)) + 1 if i else 1
+		topics.append(topic[index_len+1:])
+
+	return topic_model.topic_embeddings_, topics
 

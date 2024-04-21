@@ -1,37 +1,39 @@
 import os
-# import requests
-# import asyncio
-# import pandas as pd
-# import numpy as np
-# import json
+import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from user_tweets import get_tweets_and_likes, get_twitter_user_by_username
 from text_embedding import get_text_embedding
 from topic_modeling import generate_topics
 from upload_to_pinecone import upload_embedding
 from get_tweets_for_topic import get_full_topic_info
-# from get_stream_tweets_images import (
-#     bearer_oauth,
-#     get_tweet_image_from_id,
-#     remove_twitter_images,
-#     River,
-# 	PROMPT,
-# 	is_english,
-# 	set_rules,
-# )
 from get_topics_from_pinecone import query_for_user
-# from test_embeddings import get_image_embeddings
-# from river import stream
-# from river import cluster
-# from bertopic.vectorizers import OnlineCountVectorizer
-# from bertopic.vectorizers import ClassTfidfTransformer
-# import openai
-# import tiktoken
-# from bertopic import BERTopic
-# from bertopic.representation import OpenAI
-# from pinecone import Pinecone
+from fastapi.middleware.cors import CORSMiddleware
+import vertexai
+import random
+from copy import copy
 
 app = FastAPI()
+
+origins = [
+    "https://localhost",
+    "http://localhost",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "https://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+vertexai.init(project='x-dev-hackath', location="us-central1")
+
+TOPIC_RANKING = {}
+SEEN = set()
 
 @app.get("/username")
 async def get_username(username: str):
@@ -62,9 +64,36 @@ async def get_username(username: str):
 
 @app.get("/initial_topics/{user_id}")
 async def get_initial_topics(user_id: str):
+    if user_id in SEEN:
+        return {"data": []}
+    SEEN.add(user_id)
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)
+    global TOPIC_RANKING
+    TOPIC_RANKING[user_id] = [i[0] for i in topics]
     return {"data": a}
+
+@app.get("/topic_ranking/{user_id}")
+async def get_topic_ranking(user_id: str):
+    global TOPIC_RANKING
+    new_ranking = copy(TOPIC_RANKING[user_id])
+    item = random.choice(TOPIC_RANKING[user_id])
+    try:
+        index = TOPIC_RANKING[user_id].index(item)
+        
+        if index > 0:
+            new_position = random.randint(0, index - 1)
+            new_ranking.pop(index)
+            new_ranking.insert(new_position, item)
+            print(f"Moved '{item}' from position {index} to {new_position}")
+        else:
+            print(f"Item '{item}' is already at the top of the list")
+    except ValueError:
+        return {"order": TOPIC_RANKING[user_id]}
+    else:
+        TOPIC_RANKING[user_id] = new_ranking
+        return {"order": new_ranking}
+
 
 # @app.websocket("/ws/{user_id}")
 # async def websocket_endpoint(websocket: WebSocket, user_id: str):
