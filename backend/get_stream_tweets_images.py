@@ -20,6 +20,7 @@ import openai
 import tiktoken
 import pandas as pd
 from langdetect import detect, LangDetectException
+from pinecone import Pinecone
 
 
 load_dotenv()  
@@ -128,6 +129,13 @@ def set_rules(topic):
         )
     print(json.dumps(response.json()))
 
+def upload_embedding(vectors):
+    api_key = os.environ["PINECONE_API_KEY"]
+    pinecone = Pinecone(api_key=api_key)
+
+    index = pinecone.Index('streamed-tweets')
+    index.upsert(vectors=vectors)
+
 def remove_twitter_images(text):
     # This pattern matches URLs like "https://t.co/..." which are typically used for Twitter images or links
     pattern = r"https://t.co/[A-Za-z0-9]+"
@@ -207,7 +215,7 @@ def get_filtered_stream():
             # Remove image links from the tweet text (implement this function)
             cleaned_text = remove_twitter_images(json_response["data"]["text"])
 
-            tweets_data.append((image_url, cleaned_text))
+            tweets_data.append((image_url, cleaned_text, tweet_id))
 
             topic_model = BERTopic(
                 hdbscan_model=cluster_model, 
@@ -221,10 +229,11 @@ def get_filtered_stream():
             print(f'Tweet Language:{is_english(json_response["data"]["text"])}')
             if len(tweets_data) == 15:
                 try:
-                    cleaned_tweets_data = [(image,tweet) for image,tweet in tweets_data if tweet != '' and is_english(tweet) ]
-                    cleaned_images_data = [(image,tweet) for image,tweet in tweets_data if image is not None]
-                    tweets = [tweet for image, tweet in cleaned_tweets_data]
-                    tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet in cleaned_tweets_data ]
+                    cleaned_tweets_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if tweet != '' and is_english(tweet) ]
+                    cleaned_images_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if image is not None]
+                    tweets = [tweet for image, tweet, tweetid in cleaned_tweets_data]
+                    tweet_ids = [tweetid for image, tweet, tweetid in cleaned_tweets_data]
+                    tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_tweets_data ]
                     text_embeddings =[embedding[1] for embedding in tweet_embeddings]
                     # image_embeddings = [embedding[0] for embedding in tweet_embeddings]
                     # print("Embedded tweets")
@@ -232,6 +241,14 @@ def get_filtered_stream():
                     topic_model.partial_fit(tweets,embeddings=np.array(text_embeddings))
                     topic_model.topic_embeddings_
                     print(topic_model.get_topic_info())
+
+                    # Upload to pinecone
+                    values = [{
+						'id': tweetid,
+						'metadata': {'text': tweet},
+						'values': tweet_emb
+					} for tweetid, tweet, tweet_emb in zip(tweet_ids, tweets, text_embeddings)]
+                    upload_embedding(values)
                     
                 except Exception as e:
                     print("Couldn't update model")
