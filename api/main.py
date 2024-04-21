@@ -1,37 +1,36 @@
 import os
-# import requests
-# import asyncio
-# import pandas as pd
-# import numpy as np
-# import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from user_tweets import get_tweets_and_likes, get_twitter_user_by_username
 from text_embedding import get_text_embedding
 from topic_modeling import generate_topics
 from upload_to_pinecone import upload_embedding
 from get_tweets_for_topic import get_full_topic_info
-# from get_stream_tweets_images import (
-#     bearer_oauth,
-#     get_tweet_image_from_id,
-#     remove_twitter_images,
-#     River,
-# 	PROMPT,
-# 	is_english,
-# 	set_rules,
-# )
 from get_topics_from_pinecone import query_for_user
-# from test_embeddings import get_image_embeddings
-# from river import stream
-# from river import cluster
-# from bertopic.vectorizers import OnlineCountVectorizer
-# from bertopic.vectorizers import ClassTfidfTransformer
-# import openai
-# import tiktoken
-# from bertopic import BERTopic
-# from bertopic.representation import OpenAI
-# from pinecone import Pinecone
+from fastapi.middleware.cors import CORSMiddleware
+import vertexai
+import random
 
 app = FastAPI()
+
+origins = [
+    "https://localhost",
+    "http://localhost",
+    "http://localhost:8000",
+    "http://localhost:3000",
+    "https://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+vertexai.init(project='x-dev-hackath', location="us-central1")
+
+TOPIC_RANKING = []
 
 @app.get("/username")
 async def get_username(username: str):
@@ -64,7 +63,19 @@ async def get_username(username: str):
 async def get_initial_topics(user_id: str):
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)
+    global TOPIC_RANKING
+    TOPIC_RANKING = topics
     return {"data": a}
+
+@app.get("/topic_ranking/{user_id}")
+async def get_topic_ranking(user_id: str):
+    # Move a random topic up a random amound
+    global TOPIC_RANKING
+    random_idx = random.randint(0, len(TOPIC_RANKING) - 1)
+    # Move it up a random amount such that it doesn't go below 0
+    random_amount = random.randint(0, 5)
+    TOPIC_RANKING[random_idx] = (TOPIC_RANKING[random_idx][0], TOPIC_RANKING[random_idx][1] + random_amount)
+
 
 # @app.websocket("/ws/{user_id}")
 # async def websocket_endpoint(websocket: WebSocket, user_id: str):
