@@ -22,6 +22,9 @@ def get_image_data(
 ):
     # Fetch the image
     response = requests.get(url)
+    content_type = response.headers['content-type']
+    format = {'image/png': 'PNG', 'image/jpeg': 'JPEG', 'image/webp': 'WEBP'}.get(content_type, 'JPEG')  # Default to JPEG if unknown
+
     img = Image.open(BytesIO(response.content))
 
     # Resize the image
@@ -29,10 +32,13 @@ def get_image_data(
 
     # Save the resized image to a bytes buffer
     img_byte_arr = BytesIO()
-    img_resized.save(img_byte_arr, format='JPEG')  # You can change the format as needed
+    img_resized.save(img_byte_arr, format=format)  # Use the dynamic format
 
     # Get the byte data
     return img_byte_arr.getvalue()
+
+
+vertexai.init(project='x-dev-hackath', location="us-central1")
 
 def get_image_embeddings(
     image_path: str,
@@ -46,8 +52,6 @@ def get_image_embeddings(
         image_path: Path to image (local or Google Cloud Storage) to generate embeddings for.
         contextual_text: Text to generate embeddings for.
     """
-    
-    vertexai.init(project=os.environ['PROJECT_ID'], location="us-central1")
 
     model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding")
     image = get_image_data(image_path)
@@ -68,7 +72,9 @@ def embed_text(
     inputs = [TextEmbeddingInput(text, task) for text in texts]
     embeddings = model.get_embeddings(inputs)
     return [embedding.values for embedding in embeddings]
-print(embed_text())
-embeddings= get_image_embeddings('https://pbs.twimg.com/media/GLn3SieXQAAib6y?format=jpg&name=medium','KIZARU... 😎')
-print(f"Image Embeddings:{embeddings[0]}")
-print(f"Text Embeddings:{embeddings[1]}")
+
+if __name__ == "__main__":
+    print(embed_text())
+    embeddings= get_image_embeddings('https://pbs.twimg.com/media/GLn3SieXQAAib6y?format=jpg&name=medium','KIZARU... 😎')
+    print(f"Image Embeddings:{len(embeddings[0])}")
+    print(f"Text Embeddings:{len(embeddings[1])}")
