@@ -64,8 +64,7 @@ async def get_username(username: str):
 async def get_initial_topics(user_id: str):
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)
-    print(a)
-	# return {"topics": topics}
+    return {"data": a}
 
 # @app.websocket("/ws/{user_id}")
 # async def websocket_endpoint(websocket: WebSocket, user_id: str):
