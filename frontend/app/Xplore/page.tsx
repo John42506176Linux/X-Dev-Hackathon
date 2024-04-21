@@ -1,6 +1,6 @@
 'use client'
 
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useRef, useState} from 'react'
 import {animated, useTransition} from '@react-spring/web'
 import shuffle from "lodash.shuffle"
 import Image from "next/image"
@@ -9,7 +9,6 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/comp
 import {ScrollArea, ScrollBar} from '@/components/ui/scroll-area'
 import TwitterPost from '@/components/twitter-post'
 import {Tweet, tweets} from '@/components/data/posts'
-import axios from 'axios';
 // @ts-ignore
 
 export interface Artwork {
@@ -69,7 +68,6 @@ class TopicBlock extends React.Component<({
   render() {
     // let {profilePic, userName, handle, content, timestamp, topic} = this.props;
     let {topic} = this.props;
-    console.log()
     return (
       <ScrollArea className="ease-in w-full whitespace-nowrap rounded-md border">
         <Card className="sm:col-span-2">
@@ -119,34 +117,51 @@ class TopicBlock extends React.Component<({
     );
   }
 }
+class HttpClient {
+  // @ts-ignore
+  private baseUrl: string;
+  constructor() {
+    this.baseUrl = "http://127.0.0.1:8000"
+    // @ts-ignore
+    // this.defaultOpts = opts.defaultOpts ?? {};
+  }
+
+  // @ts-ignore
+  fetch(resource, opts) {
+    if (resource.slice(0, 1) !== '/') {
+      resource = `/${resource}`;
+    }
+    // @ts-ignore
+    const url = this.baseUrl ? `${this.baseUrl}${resource}` : resource;
+    // @ts-ignore
+    return fetch(url, { ...this.defaultOpts, ...opts });
+  }
+  get(resource: string) {
+
+    // @ts-ignore
+    const url = this.baseUrl ? `${this.baseUrl}${resource}` : resource;
+    // @ts-ignore
+    return fetch(url);
+  }
+}
 
 // @ts-ignore
 export function List(userID) {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null)
+  const [tpcs, setTpcs] = useState(null)
   const [rows, set] = useState(topics)
+  const fastClient = new HttpClient();
+  fastClient.get(`/initial_topics/`+userID.userID).then(blob => blob.json())
+    .then(data => {
+      setTpcs(data);
+      console.log(topics);
+      return {data};
+    })
+    .catch(e => {
+      console.log(e);
+      return e;
+    });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // ... (Change the fetch part with Axios)
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/initial_topics/3293358400');
-        setData(response.data); // Axios automatically parses JSON
-        console.log(response.data);
-      } catch (err) {
-        // Axios provides more specific error info
-        // @ts-ignore
-        setError(err.message);
-        console.log(err.message);
-      } finally {
-        setLoading(false);
-        console.log(data);
-      }
-    };
-
-    fetchData();
-  }, []);
   useEffect(() => {
     const t = setInterval(() => set(shuffle), 8000)
     return () => clearInterval(t)
@@ -155,16 +170,17 @@ export function List(userID) {
   let height = 0
   let heightCard = 400
   const transitions = useTransition(
-    rows.map(topics => ({...topics, y: (height += heightCard) - heightCard})),
-    {
-      key: (item: any) => item.id,
-      from: {height: 0, opacity: 0},
-      leave: {height: 0, opacity: 0},
-      // @ts-ignore
-      enter: ({y, height = 500}) => ({y, height, opacity: 1}),
-      // @ts-ignore
-      update: ({y, height = 500}) => ({y, height}),
-    }
+      rows.map(topics => ({...topics, y: (height += heightCard) - heightCard})),
+        {
+          key: (item: any) => item.id,
+          from: {height: 0, opacity: 0},
+          leave: {height: 0, opacity: 0},
+          // @ts-ignore
+          enter: ({y, height = 500}) => ({y, height, opacity: 1}),
+          // @ts-ignore
+          update: ({y, height = 500}) => ({y, height}),
+        }
+    
   )
 
   return (
@@ -181,15 +197,5 @@ export function List(userID) {
 }
 
 export default function ExplorePage() {
-  // const [transitions, api] = useTransition(data, () => ({
-  //   from: { opacity: 0 },
-  //   enter: { opacity: 1 },
-  //   leave: { opacity: 1 },
-  // }))
-  //
-  // return transitions((style, item) => (
-  //   <animated.div style={style}>{item}</animated.div>
-  // ))
   return <List userID={3293358400}/>
-
 }
