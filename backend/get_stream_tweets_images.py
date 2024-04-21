@@ -20,6 +20,7 @@ import openai
 import tiktoken
 import pandas as pd
 from langdetect import detect, LangDetectException
+from query_pinecone import get_top_similarity_score
 
 
 load_dotenv()  
@@ -237,6 +238,26 @@ def get_filtered_stream():
                     print("Couldn't update model")
                 tweets_data.clear()
 
+def get_top_topics(topic_model, top_n=3):
+    # Extract topic embeddings and representations
+    topic_embeddings = topic_model.topic_embeddings_
+    topic_representations = topic_model.topic_representations_
+    
+    # List to store topics and their scores
+    topic_scores = []
+    
+    # Calculate scores for each topic embedding
+    for i, topic in enumerate(topic_embeddings):
+        score = get_top_similarity_score(topic)
+        topic_scores.append((score, i))
+    
+    # Sort topics by score in descending order (higher scores are more central/significant)
+    topic_scores.sort(reverse=True, key=lambda x: x[0])
+    
+    # Fetch the top_n topics based on their scores
+    top_topics = [(topic_embeddings[i], topic_representations[i]) for _, i in topic_scores[:top_n]]
+    
+    return top_topics
                 
 
 def main():
