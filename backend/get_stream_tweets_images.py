@@ -8,9 +8,62 @@ import re
 from PIL import Image
 import requests
 from io import BytesIO
+from river import stream
+from river import cluster
+from bertopic.vectorizers import OnlineCountVectorizer
+from bertopic.vectorizers import ClassTfidfTransformer
+from bertopic import BERTopic
+from test_embeddings import get_image_embeddings
+import numpy as np
+from bertopic.representation import OpenAI
+import openai
+import tiktoken
+import pandas as pd
+from langdetect import detect, LangDetectException
+
 
 load_dotenv()  
 
+def is_english(text):
+    try:
+        # Detect the language of the text
+        return detect(text) == 'en'
+    except LangDetectException:
+        # Handle exception if text is too short or any other issue with langdetect
+        return False
+
+PROMPT = """
+I have topic that contains the following documents: \n[DOCUMENTS]
+The topic is described by the following keywords: [KEYWORDS]
+
+Based on the above information, can you give a short label of the topic?
+
+The topics should have optinions based on the documents and keywords. Here are some examples of topics:
+    - Who Will the Bengals Draft?
+    - Earth on a Record Hot Streak
+    - Senate Authorizes Controversial Surveillance Program
+    - Jujutsu Kaisen -  Nah, I'd Pass
+    - Netflix's One Piece Review: A Not-Quite Grand Line
+    - Humane AI Pin Reveals its Fatal Flaw
+
+Keep the topic down to about 5 words and make sure it is immediately usable as a title.
+"""
+
+class River:
+    def __init__(self, model):
+        self.model = model
+
+    def partial_fit(self, umap_embeddings):
+        for umap_embedding, _ in stream.iter_array(umap_embeddings):
+            self.model.learn_one(umap_embedding)
+
+        labels = []
+        for umap_embedding, _ in stream.iter_array(umap_embeddings):
+            label = self.model.predict_one(umap_embedding)
+            labels.append(label)
+
+        self.labels_ = labels
+        return self
 
 # To set your enviornment variables in your terminal run the following line:
 bearer_token = os.environ['TWITTER_BEARER_TOKEN']
@@ -61,7 +114,7 @@ def delete_all_rules(rules):
 def set_rules(topic):
     # You can adjust the rules if needed
     sample_rules = [
-        {"value": f"{topic} has:images"},
+        {"value": f"{topic}"},
     ]
     payload = {"add": sample_rules}
     response = requests.post(
@@ -109,7 +162,7 @@ def get_tweet_image_from_id(id):
     except Exception as e:
         return None
 
-def get_stream():
+def get_filtered_stream():
     headers = {"x-b3-flags": '1'}
     response = requests.get(
         "https://api.twitter.com/2/tweets/search/stream", auth=bearer_oauth, headers=headers, stream=True,
@@ -122,20 +175,75 @@ def get_stream():
                 response.status_code, response.text
             )
         )
+    tweets_data = []
+    cluster_model = River(cluster.DBSTREAM())
+    vectorizer_model = OnlineCountVectorizer(stop_words="english")
+    ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True, bm25_weighting=True)
+    tokenizer= tiktoken.encoding_for_model("gpt-3.5-turbo")
+    client = openai.OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+    representation_model = OpenAI(
+        client,
+        model="gpt-3.5-turbo", 
+        delay_in_seconds=2, 
+        chat=True,
+        nr_docs=4,
+        doc_length=100,
+        tokenizer=tokenizer,
+        prompt=PROMPT
+    )
+    pd.set_option('display.max_rows', None)       # No limit on the number of rows displayed
+    pd.set_option('display.max_columns', None)    # No limit on the number of columns displayed
+    pd.set_option('display.width', None)          # Automatically set the display width to accommodate the maximum line width
+    pd.set_option('display.max_colwidth', None)   # Display the full content of each column without truncation
     for response_line in response.iter_lines():
         if response_line:
             json_response = json.loads(response_line)
-            id = json_response["data"]["id"]
 
-            print(f"Image:{get_tweet_image_from_id(id)}")
-            # print(json.dumps(json_response, indent=4, sort_keys=True))
-            print(f'Text:{remove_twitter_images(json_response["data"]["text"])}')
+            tweet_id = json_response["data"]["id"]
+
+            # Get the image URL from the tweet ID (implement this function)
+            image_url = get_tweet_image_from_id(tweet_id)
+
+            # Remove image links from the tweet text (implement this function)
+            cleaned_text = remove_twitter_images(json_response["data"]["text"])
+
+            tweets_data.append((image_url, cleaned_text))
+
+            topic_model = BERTopic(
+                hdbscan_model=cluster_model, 
+                vectorizer_model=vectorizer_model, 
+                ctfidf_model=ctfidf_model,
+                representation_model=representation_model,
+                min_topic_size=10
+            )
+            print(f"Number of Tweets:{len(tweets_data)}")
+            print(f'Tweet:{json_response["data"]["text"]}')
+            print(f'Tweet Language:{is_english(json_response["data"]["text"])}')
+            if len(tweets_data) == 15:
+                try:
+                    cleaned_tweets_data = [(image,tweet) for image,tweet in tweets_data if tweet != '' and is_english(tweet) ]
+                    images = [image for image, tweet in cleaned_tweets_data]
+                    tweets = [tweet for image, tweet in cleaned_tweets_data]
+                    tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet in cleaned_tweets_data ]
+                    text_embeddings =[embedding[1] for embedding in tweet_embeddings]
+                    # image_embeddings = [embedding[0] for embedding in tweet_embeddings]
+                    # print("Embedded tweets")
+                    print(f"Cleaned tweets:{len(tweets)}")
+                    topic_model.partial_fit(tweets,embeddings=np.array(text_embeddings))
+                    topic_model.topic_embeddings_
+                    print(topic_model.get_topic_info())
+                    
+                except Exception as e:
+                    print("Couldn't update model")
+                tweets_data.clear()
+
+                
 
 def main():
     rules = get_rules()
     delete = delete_all_rules(rules)
-    set_rules('#420day')
-    get_stream()
+    set_rules('LAKERS')
+    get_filtered_stream()
 
 if __name__ == "__main__":
     main()
