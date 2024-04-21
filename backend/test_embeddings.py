@@ -16,6 +16,7 @@ import vertexai
 import os
 
 load_dotenv()  
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
 
 def get_image_data(
     url: str,
@@ -41,7 +42,7 @@ def get_image_data(
 vertexai.init(project='x-dev-hackath', location="us-central1")
 
 def get_image_embeddings(
-    image_path: str,
+    image_path: str = None,
     contextual_text: Optional[str] = None,
 ) -> MultiModalEmbeddingResponse:
     """Example of how to generate multimodal embeddings from image and text.
@@ -54,27 +55,33 @@ def get_image_embeddings(
     """
 
     model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding")
-    image = get_image_data(image_path)
+    if image_path:
+        image = get_image_data(image_path)
 
-    embeddings = model.get_embeddings(
-        image=GoogleImage(image),
-        contextual_text=contextual_text,
-    )
+    if image_path is not None:
+        embeddings = model.get_embeddings(
+            image=GoogleImage(image),
+            contextual_text=contextual_text,
+        )
+    else:
+        embeddings = model.get_embeddings(
+            contextual_text=contextual_text,
+        )
     return (embeddings.image_embedding,embeddings.text_embedding)
 
-def embed_text(
-    texts: List[str] = ["banana muffins? ", "banana bread? banana muffins?"],
-    task: str = "RETRIEVAL_DOCUMENT",
-    model_name: str = "textembedding-gecko@003",
-) -> List[List[float]]:
-    """Embeds texts with a pre-trained, foundational model."""
-    model = TextEmbeddingModel.from_pretrained(model_name)
-    inputs = [TextEmbeddingInput(text, task) for text in texts]
-    embeddings = model.get_embeddings(inputs)
-    return [embedding.values for embedding in embeddings]
+# def embed_text(
+#     texts: List[str] = ["banana muffins? ", "banana bread? banana muffins?"],
+#     task: str = "RETRIEVAL_DOCUMENT",
+#     model_name: str = "textembedding-gecko@003",
+# ) -> List[List[float]]:
+#     """Embeds texts with a pre-trained, foundational model."""
+#     model = TextEmbeddingModel.from_pretrained(model_name)
+#     inputs = [TextEmbeddingInput(text, task) for text in texts]
+#     embeddings = model.get_embeddings(inputs)
+#     return [embedding.values for embedding in embeddings]
 
 if __name__ == "__main__":
-    print(embed_text())
+    # print(embed_text())
     embeddings= get_image_embeddings('https://pbs.twimg.com/media/GLn3SieXQAAib6y?format=jpg&name=medium','KIZARU... 😎')
-    print(f"Image Embeddings:{len(embeddings[0])}")
+    # print(f"Image Embeddings:{len(embeddings[0])}")
     print(f"Text Embeddings:{len(embeddings[1])}")
