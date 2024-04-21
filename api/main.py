@@ -133,8 +133,8 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 						# print("Embedded tweets")
 						print(f"Cleaned tweets:{len(tweets)}")
 						topic_model.partial_fit(tweets,embeddings=np.array(text_embeddings))
-						topic_model.topic_embeddings_
-						await websocket.send_json({"topics": list(topic_model.get_topic_info()['Name'])})
+						topic_names = [name[2:] for name in topic_model.get_topic_info()['Name']]
+						await websocket.send_json({"topics": topic_names})
 						print(topic_model.get_topic_info())
 					except Exception as e:
 						print(f'Error: {e}')
