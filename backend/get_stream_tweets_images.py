@@ -13,7 +13,7 @@ from river import cluster
 from bertopic.vectorizers import OnlineCountVectorizer
 from bertopic.vectorizers import ClassTfidfTransformer
 from bertopic import BERTopic
-from test_embeddings import get_image_embeddings
+from test_embeddings import get_image_embeddings,get_video_embeddings
 import numpy as np
 from bertopic.representation import OpenAI
 import openai
@@ -22,7 +22,6 @@ import pandas as pd
 from langdetect import detect, LangDetectException
 from query_pinecone import get_top_similarity_score,get_top_k_images,get_top_k_tweets
 from pinecone import Pinecone
-
 
 load_dotenv()  
 
@@ -76,7 +75,7 @@ def bearer_oauth(r):
     Method required by bearer token authentication.
     """
 
-    r.headers["Authorization"] = f"Bearer {bearer_token}"
+    r.headers["Authorization"] = f"Bearer AAAAAAAAAAAAAAAAAAAAACZLowEAAAAAqbqEM0Bk33rDVEaZdsexySulbMg%3D1osvkSMf2agMjVQckdCaoVh5VKFYEvPaoBiEElQm3mmYc4wvhw"
     r.headers["User-Agent"] = "v2FilteredStreamPython"
     return r
 
@@ -147,7 +146,7 @@ def remove_twitter_images(text):
     return cleaned_text
 
 def get_tweet_image_from_id(id):
-    tweet_fields = "expansions=attachments.media_keys&media.fields=duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text"
+    tweet_fields = "expansions=attachments.media_keys&media.fields=duration_ms,height,media_key,preview_image_url,public_metrics,type,url,width,alt_text,variants"
     # Tweet fields are adjustable.
     # Options include:
     # attachments, author_id, context_annotations,
@@ -159,6 +158,8 @@ def get_tweet_image_from_id(id):
     # You can adjust ids to include a single Tweets.
     # Or you can add to up to 100 comma-separated IDs
     url = "https://api.twitter.com/2/tweets?{}&{}".format(ids, tweet_fields)
+    image_url = None
+    video_url = None
     try:
         response = requests.request("GET", url, auth=bearer_oauth)
         if response.status_code != 200:
@@ -167,9 +168,21 @@ def get_tweet_image_from_id(id):
                     response.status_code, response.text
                 )
             )
-        return response.json()['includes']['media'][0]['url']
     except Exception as e:
+        print(f"Exception:${e}")
         return None
+
+    try: 
+        image_url = response.json()['includes']['media'][0]['url']
+    except Exception as e:
+        print("Coudn't get image")
+
+    try: 
+        if response.json()['includes']['media'][0]['variants'][0]['content_type'] == 'video/mp4':
+            video_url =  response.json()['includes']['media'][0]['variants'][0]['url']
+    except Exception as e:
+        print("Couldn't get video")
+    return image_url,video_url
 
 def get_filtered_stream():
     headers = {"x-b3-flags": '1'}
@@ -206,6 +219,7 @@ def get_filtered_stream():
     pd.set_option('display.max_colwidth', None)   # Display the full content of each column without truncation
     topics = []
     documents = []
+    full_embeddings = []
     for response_line in response.iter_lines():
         if response_line:
             json_response = json.loads(response_line)
@@ -213,12 +227,23 @@ def get_filtered_stream():
             tweet_id = json_response["data"]["id"]
 
             # Get the image URL from the tweet ID (implement this function)
-            image_url = get_tweet_image_from_id(tweet_id)
+            
+            response = get_tweet_image_from_id(tweet_id)
 
-            # Remove image links from the tweet text (implement this function)
+            image_url =  None
+            video_url = None
+
+            if response is not None:
+                image_url =  response[0]
+                video_url =  response[1]
+
+            print(f"Image Url:{image_url}")
+            print(f"Video Url:{video_url}")
+
+            # # Remove image links from the tweet text (implement this function)
             cleaned_text = remove_twitter_images(json_response["data"]["text"])
-
-            tweets_data.append((image_url, cleaned_text, tweet_id))
+            print(f"Text:{cleaned_text}")
+            tweets_data.append((image_url, cleaned_text, tweet_id,video_url))
 
             topic_model = BERTopic(
                 hdbscan_model=cluster_model, 
@@ -231,27 +256,36 @@ def get_filtered_stream():
             print(f'Tweet:{json_response["data"]["text"]}')
             print(f'Tweet Language:{is_english(json_response["data"]["text"])}')
             if len(tweets_data) == 10:
-                try:
-                    cleaned_tweets_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if tweet != '' and is_english(tweet) ]
-                    cleaned_images_data = [(image,tweet,tweetid) for image,tweet,tweetid in tweets_data if image is not None]
-                    tweets = [tweet for image, tweet, tweetid in cleaned_tweets_data]
-                    tweet_ids = [tweetid for image, tweet, tweetid in cleaned_tweets_data]
-                    tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_tweets_data ]
-                    text_embeddings =[embedding[1] for embedding in tweet_embeddings]
+                # try:
+                cleaned_tweets_data = [(image,tweet,tweetid) for image,tweet,tweetid,_ in tweets_data if tweet != '' and is_english(tweet) ]
+                cleaned_images_data = [(image,tweet,tweetid) for image,tweet,tweetid,_ in tweets_data if image is not None]
+                cleaned_video_data = [(tweet,video,tweet_id) for _,tweet,tweet_id,video in tweets_data if video is not None]
+                print(f"Cleaned Video Data:{cleaned_video_data}")
+                tweets = [tweet for image, tweet, tweetid in cleaned_tweets_data]
+                tweet_ids = [tweetid for image, tweet, tweetid in cleaned_tweets_data]
+                tweet_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_tweets_data ]
+                text_embeddings =[embedding[1] for embedding in tweet_embeddings]
 
-                    images = [image for image, tweet, tweetid in cleaned_images_data]
-                    image_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_images_data ]
-                    image_embeddings = [embedding[0] for embedding in image_embeddings]
-                    # print("Embedded tweets")
-                    print(f"Cleaned tweets:{len(tweets)}")
-                    documents.extend(tweets)
-                    topic_model.partial_fit(documents,embeddings=np.array(text_embeddings))
-                    top_topics = get_top_topics(topic_model)
-                    print(f"FULL INFO:{json.dumps(get_full_topic_info(top_topics),indent=4)}")
-                    topics.extend(topic_model.topics_)
-                except Exception as e:
-                    print(f"Exception:{e}")
-                    print("Couldn't update model")
+                images = [image for image, tweet, tweetid in cleaned_images_data]
+                image_embeddings = [get_image_embeddings(image,tweet) for image,tweet,tweetid in cleaned_images_data ]
+                image_embeddings = [embedding[0] for embedding in image_embeddings]
+
+                videos = [video for video, tweet, tweetid in cleaned_video_data]
+                video_embeddings = [get_video_embeddings(video,tweet) for tweet,video,tweetid in cleaned_video_data ]
+                video_embeddings = [embedding[0] for embedding in image_embeddings]
+                # print("Embedded tweets")
+                print(f"Cleaned tweets:{len(tweets)}")
+                documents.extend(tweets)
+                full_embeddings.extend(text_embeddings)
+                topic_model.partial_fit(documents,embeddings=np.array(full_embeddings))
+                print("Checking if topic_model passed")
+                top_topics = get_top_topics(topic_model)
+                print("Checking if top_topics passed")
+                print(f"FULL INFO:{json.dumps(get_full_topic_info(top_topics),indent=4)}")
+                topics.extend(topic_model.topics_)
+                # except Exception as e:
+                #     print(f"Exception:{e}")
+                #     print("Couldn't update model")
 
                 try:
                     # Upload to pinecone
@@ -268,9 +302,20 @@ def get_filtered_stream():
                         'metadata': {'image': image},
                         'values': image_emb
                     } for tweetid, image, image_emb in zip(tweet_ids, images, image_embeddings)]
+
                     if values:
                         upload_embedding(values, 'streamed-images')
                     print(f'Uploaded {len(values)} images to pinecone')
+
+                    values = [{
+                        'id': tweetid,
+                        'metadata': {'video': video},
+                        'values': video_emb
+                    } for tweetid, video, video_emb in zip(tweet_ids, videos, video_embeddings)]
+
+                    if values:
+                        upload_embedding(values, 'streamed-videos')
+                    print(f'Uploaded {len(values)} videos to pinecone')
                 except Exception as e:
                     print("Couldn't upload to pinecone")
 
@@ -293,12 +338,22 @@ def get_top_topics(topic_model, top_n=3):
     topic_representations = topic_model.topic_representations_
     # List to store topics and their scores
     topic_scores = []
-    
+    print(f"{len(topic_embeddings)}")
+    print(f"{len(topic_representations)}")
+    print(f"{topic_embeddings}")
+    print(f"{topic_representations}")
     # Calculate scores for each topic embedding
+    print("In Top Topics")
+    print("")
     for i, topic in enumerate(topic_embeddings):
-        score = get_top_similarity_score(topic,"3293358400")
-        topic_scores.append((score, i))
-    
+        try:
+            score = get_top_similarity_score(topic,"3293358400")
+
+            topic_scores.append((score, i))
+        except Exception as e:
+            print(f"Get_Topic_Topic Failed:{e}")
+    print(f"Topic score:{topic_scores}")
+    print(f"len{topic_scores}")
     # Sort topics by score in descending order (higher scores are more central/significant)
     topic_scores.sort(reverse=True, key=lambda x: x[0])
     
