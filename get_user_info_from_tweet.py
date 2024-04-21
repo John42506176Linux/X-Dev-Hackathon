@@ -11,7 +11,7 @@ def get_user_id_from_tweet_id(tweet_id, bearer_token):
     :param bearer_token: A valid Twitter API bearer token
     :return: The user ID of the tweet's author
     """
-    url = f"https://api.twitter.com/2/tweets?ids={tweet_id}&expansions=author_id&user.fields=profile_image_url"
+    url = f"https://api.twitter.com/2/tweets?ids={tweet_id}&expansions=author_id&user.fields=profile_image_url,created_at"
     headers = {
         "Authorization": f"Bearer {bearer_token}"
     }

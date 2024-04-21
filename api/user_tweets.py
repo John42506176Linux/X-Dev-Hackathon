@@ -35,3 +35,7 @@ def get_tweets_and_likes(username: str):
     tweet_data.extend(likes_data)
 
     return tweet_data
+
+if __name__ == "__main__":
+    bearer_token = os.environ["TWITTER_BEARER_TOKEN"]
+    print(get_twitter_user_by_username("vidithbalasa", bearer_token)['data']['id'])
