@@ -10,50 +10,6 @@ import {ScrollArea, ScrollBar} from '@/components/ui/scroll-area'
 import TwitterPost from '@/components/twitter-post'
 import {Tweet, tweets} from '@/components/data/posts'
 // @ts-ignore
-function useWebSocket(url, maxRetries = 10, retryDelay = 60000) {
-  let retries = 0;
-  const [data, setData] = useState(null);
-  const [socket, setSocket] = useState(null);
-
-  useEffect(() => {
-    const ws = new WebSocket(url);
-    const connect = () => {
-      const socket = new WebSocket(url);
-    }
-
-    ws.onopen = () => {
-      // @ts-ignore
-      setSocket(ws);
-    };
-
-    ws.onmessage = (event) => {
-      setData(JSON.parse(event.data));
-      console.log(JSON.parse(event.data))
-    };
-
-    ws.onclose = () => {
-      if (retries < maxRetries) {
-        setTimeout(connect, retryDelay);
-        retries++;
-      }
-    };
-    return () => {
-      if (ws.readyState === 1) {
-        ws.close();
-      }
-    }
-  }, [url]);
-
-  // @ts-ignore
-  const sendMessage = (data) => {
-    if (socket) {
-      // @ts-ignore
-      socket.send(JSON.stringify(data));
-    }
-  };
-
-  return [data, sendMessage];
-}
 
 export interface Artwork {
   artist: string
@@ -164,11 +120,9 @@ class TopicBlock extends React.Component<({
 }
 
 export function List() {
-  const [socketData, sendSocketMessage] = useWebSocket('ws://127.0.0.1:8000/ws/3293358400');
   const [rows, set] = useState(topics)
   useEffect(() => {
     const t = setInterval(() => set(shuffle), 8000)
-    console.log(socketData)
     return () => clearInterval(t)
   }, [])
 
