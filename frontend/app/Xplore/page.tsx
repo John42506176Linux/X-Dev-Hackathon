@@ -9,6 +9,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "@/comp
 import {ScrollArea, ScrollBar} from '@/components/ui/scroll-area'
 import TwitterPost from '@/components/twitter-post'
 import {Tweet, tweets} from '@/components/data/posts'
+import axios from 'axios';
 // @ts-ignore
 
 export interface Artwork {
@@ -119,8 +120,32 @@ class TopicBlock extends React.Component<({
   }
 }
 
-export function List() {
+// @ts-ignore
+export function List(userID) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [rows, set] = useState(topics)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // ... (Change the fetch part with Axios)
+      try {
+        const response = await axios.get('localhost:8000/initial_topics/'+{userID});
+        setData(response.data); // Axios automatically parses JSON
+        console.log(response.data);
+      } catch (err) {
+        // Axios provides more specific error info
+        // @ts-ignore
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        console.log(data);
+      }
+    };
+
+    fetchData();
+  }, []);
   useEffect(() => {
     const t = setInterval(() => set(shuffle), 8000)
     return () => clearInterval(t)
@@ -164,6 +189,6 @@ export default function ExplorePage() {
   // return transitions((style, item) => (
   //   <animated.div style={style}>{item}</animated.div>
   // ))
-  return <List/>
+  return <List userID={3293358400}/>
 
 }
