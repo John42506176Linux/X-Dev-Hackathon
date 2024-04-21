@@ -97,15 +97,17 @@ def get_tweet_image_from_id(id):
     # You can adjust ids to include a single Tweets.
     # Or you can add to up to 100 comma-separated IDs
     url = "https://api.twitter.com/2/tweets?{}&{}".format(ids, tweet_fields)
-
-    response = requests.request("GET", url, auth=bearer_oauth)
-    if response.status_code != 200:
-        raise Exception(
-            "Request returned an error: {} {}".format(
-                response.status_code, response.text
+    try:
+        response = requests.request("GET", url, auth=bearer_oauth)
+        if response.status_code != 200:
+            raise Exception(
+                "Request returned an error: {} {}".format(
+                    response.status_code, response.text
+                )
             )
-        )
-    return response.json()['includes']['media'][0]['url']
+        return response.json()['includes']['media'][0]['url']
+    except Exception as e:
+        return None
 
 def get_stream():
     headers = {"x-b3-flags": '1'}
