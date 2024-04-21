@@ -35,6 +35,11 @@ vertexai.init(project='x-dev-hackath', location="us-central1")
 TOPIC_RANKING = {}
 SEEN = set()
 
+@app.get("/")
+def hello():
+    print("Right endpoint")
+    return {"testing": True}
+
 @app.get("/username")
 async def get_username(username: str):
     bearer_token = os.environ["TWITTER_BEARER_TOKEN"]
@@ -64,8 +69,8 @@ async def get_username(username: str):
 
 @app.get("/initial_topics/{user_id}")
 async def get_initial_topics(user_id: str):
-    if user_id in SEEN:
-        return {"data": []}
+    # if user_id in SEEN:
+    #     return {"data": []}
     SEEN.add(user_id)
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)

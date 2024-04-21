@@ -1,11 +1,13 @@
+// @ts-nocheck
 export interface Tweet {
-  profilePic: string
-  userName: string
-  handle: string
-  content: string
-  timestamp: string
-  likes: number
+  created_at: any
+  id: any
+  name: any
+  profile_image_url: any
+  username: any
+  content: any
 }
+
 
 export const tweets: Tweet[] = [
   {

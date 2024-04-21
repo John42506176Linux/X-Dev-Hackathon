@@ -1,3 +1,4 @@
+
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
@@ -12,6 +13,10 @@ export const siteConfig = {
     {
       title: "Xplore",
       href: "/Xplore",
+    },
+    {
+      title: "Xplores",
+      href: "/Xplores",
     },
   ],
   links: {
