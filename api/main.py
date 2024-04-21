@@ -9,6 +9,7 @@ from get_topics_from_pinecone import query_for_user
 from fastapi.middleware.cors import CORSMiddleware
 import vertexai
 import random
+from copy import copy
 
 app = FastAPI()
 
@@ -30,7 +31,7 @@ app.add_middleware(
 
 vertexai.init(project='x-dev-hackath', location="us-central1")
 
-TOPIC_RANKING = []
+TOPIC_RANKING = {}
 
 @app.get("/username")
 async def get_username(username: str):
@@ -64,17 +65,29 @@ async def get_initial_topics(user_id: str):
     topics = query_for_user(user_id)
     a = get_full_topic_info(topics)
     global TOPIC_RANKING
-    TOPIC_RANKING = topics
+    TOPIC_RANKING[user_id] = [i[0] for i in topics]
     return {"data": a}
 
 @app.get("/topic_ranking/{user_id}")
 async def get_topic_ranking(user_id: str):
-    # Move a random topic up a random amound
     global TOPIC_RANKING
-    random_idx = random.randint(0, len(TOPIC_RANKING) - 1)
-    # Move it up a random amount such that it doesn't go below 0
-    random_amount = random.randint(0, 5)
-    TOPIC_RANKING[random_idx] = (TOPIC_RANKING[random_idx][0], TOPIC_RANKING[random_idx][1] + random_amount)
+    new_ranking = copy(TOPIC_RANKING[user_id])
+    item = random.choice(TOPIC_RANKING[user_id])
+    try:
+        index = TOPIC_RANKING[user_id].index(item)
+        
+        if index > 0:
+            new_position = random.randint(0, index - 1)
+            new_ranking.pop(index)
+            new_ranking.insert(new_position, item)
+            print(f"Moved '{item}' from position {index} to {new_position}")
+        else:
+            print(f"Item '{item}' is already at the top of the list")
+    except ValueError:
+        return {"order": TOPIC_RANKING[user_id]}
+    else:
+        TOPIC_RANKING[user_id] = new_ranking
+        return {"order": new_ranking}
 
 
 # @app.websocket("/ws/{user_id}")
