@@ -9,11 +9,14 @@ from io import BytesIO
 from vertexai.vision_models import (
     MultiModalEmbeddingModel,
     MultiModalEmbeddingResponse,
+    Video,
+    VideoSegmentConfig,
     Image as GoogleImage
 )
 
 import vertexai
 import os
+
 
 load_dotenv()  
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "credentials.json"
@@ -38,9 +41,50 @@ def get_image_data(
     # Get the byte data
     return img_byte_arr.getvalue()
 
+def get_video_data(url: str):
+    # Fetch the video
+    response = requests.get(url)
+    
+    # Ensure the request was successful
+    if response.status_code != 200:
+        raise ValueError(f"Failed to download video: HTTP {response.status_code}")
+    
+    # Ensure the content type is a video
+    content_type = response.headers['content-type']
+    if 'video' not in content_type:
+        raise ValueError("URL must be a video, found content type: {}".format(content_type))
+
+    # Get the byte data
+    return response.content
+
 
 vertexai.init(project='x-dev-hackath', location="us-central1")
 
+def get_video_embeddings(
+    video_path: str = None,
+    contextual_text: Optional[str] = None
+):
+
+    model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding")
+    video = None
+    if video_path:
+        video = get_video_data(video_path)
+
+    if video is not None:
+        embeddings = model.get_embeddings(
+            video=Video(video),
+            video_segment_config=None,
+            contextual_text=contextual_text,
+            dimension=1408,
+        )
+    else:  
+        embeddings = model.get_embeddings(
+            contextual_text=contextual_text,
+            dimension=1408,
+        )
+    # Video Embeddings are segmented based on the video_segment_config.
+    return (embeddings.video_embeddings[0].embedding,embeddings.text_embedding)
+    
 def get_image_embeddings(
     image_path: str = None,
     contextual_text: Optional[str] = None,
@@ -82,6 +126,7 @@ def get_image_embeddings(
 
 if __name__ == "__main__":
     # print(embed_text())
-    embeddings= get_image_embeddings('https://pbs.twimg.com/media/GLn3SieXQAAib6y?format=jpg&name=medium','KIZARU... 😎')
-    # print(f"Image Embeddings:{len(embeddings[0])}")
+    embeddings= get_video_embeddings('https://video.twimg.com/tweet_video/GLsnJUqakAA5pG_.mp4','@im_right_though 😂😂😂')
+    print(f"Video Embeddings:{len(embeddings[0])}")
     print(f"Text Embeddings:{len(embeddings[1])}")
+

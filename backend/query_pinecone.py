@@ -42,7 +42,6 @@ def get_top_similarity_score(vector,user_id):
     return x
 
 def get_top_k_images(vector=None,k=10):
-    print(vector)
     pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
     index = pc.Index("streamed-images")
 
@@ -54,6 +53,19 @@ def get_top_k_images(vector=None,k=10):
     image_urls = [query_result['metadata']['image'] for query_result in query_results['matches']]
         
     return image_urls
+
+def get_top_k_videos(vector=None,k=10):
+    pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+    index = pc.Index("streamed-videos")
+
+    query_results = index.query(
+        vector=[0.1] * 1408 if vector is None else vector.tolist(),
+        top_k=k,
+        include_metadata=True
+    )
+    video_urls = [query_result['metadata']['video'] for query_result in query_results['matches']]
+        
+    return video_urls
 
 if __name__ == "__main__":
     print(len(get_top_k_tweets()))

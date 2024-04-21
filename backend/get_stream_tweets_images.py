@@ -255,7 +255,7 @@ def get_filtered_stream():
             print(f"Number of Tweets:{len(tweets_data)}")
             print(f'Tweet:{json_response["data"]["text"]}')
             print(f'Tweet Language:{is_english(json_response["data"]["text"])}')
-            if len(tweets_data) == 10:
+            if len(tweets_data) == 30:
                 # try:
                 cleaned_tweets_data = [(image,tweet,tweetid) for image,tweet,tweetid,_ in tweets_data if tweet != '' and is_english(tweet) ]
                 cleaned_images_data = [(image,tweet,tweetid) for image,tweet,tweetid,_ in tweets_data if image is not None]
@@ -272,7 +272,8 @@ def get_filtered_stream():
 
                 videos = [video for video, tweet, tweetid in cleaned_video_data]
                 video_embeddings = [get_video_embeddings(video,tweet) for tweet,video,tweetid in cleaned_video_data ]
-                video_embeddings = [embedding[0] for embedding in image_embeddings]
+                video_embeddings = [embedding[0] for embedding in video_embeddings]
+                print(f"Video_embeddings:{video_embeddings}")
                 # print("Embedded tweets")
                 print(f"Cleaned tweets:{len(tweets)}")
                 documents.extend(tweets)
@@ -312,7 +313,7 @@ def get_filtered_stream():
                         'metadata': {'video': video},
                         'values': video_emb
                     } for tweetid, video, video_emb in zip(tweet_ids, videos, video_embeddings)]
-
+                    print(f"Values:{values}")
                     if values:
                         upload_embedding(values, 'streamed-videos')
                     print(f'Uploaded {len(values)} videos to pinecone')
@@ -320,7 +321,7 @@ def get_filtered_stream():
                     print("Couldn't upload to pinecone")
 
                 tweets_data.clear()
-        topic_model.topics_ = topics
+            topic_model.topics_ = topics
 
 def get_full_topic_info(topics):
     return [
@@ -358,7 +359,7 @@ def get_top_topics(topic_model, top_n=3):
     topic_scores.sort(reverse=True, key=lambda x: x[0])
     
     # Fetch the top_n topics based on their scores
-    top_topics = [(topic_embeddings[i], topic_representations[i][0]) for _, i in topic_scores[:top_n]]
+    top_topics = [(topic_embeddings[i], list(topic_representations.values())[i][0]) for _, i in topic_scores[:top_n]]
     
     return top_topics
                 
@@ -366,7 +367,7 @@ def get_top_topics(topic_model, top_n=3):
 def main():
     rules = get_rules()
     delete = delete_all_rules(rules)
-    set_rules('LAKERS')
+    set_rules('AI')
     get_filtered_stream()
 
 if __name__ == "__main__":
