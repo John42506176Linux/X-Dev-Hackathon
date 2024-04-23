@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client"
 import Link from "next/link"
 import Image from "next/image"
@@ -6,9 +7,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { siteConfig } from "@/config/site"
 import { buttonVariants } from "@/components/ui/button"
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 
 export default function IndexPage() {
+  const [formData, setFormData] = useState({
+    handle: '',
+  });
+
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.handle]: event.target.value });
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    localStorage.setItem('formData', JSON.stringify(formData));
+    console.log('Form data saved to localStorage!');
+    try {
+      // ... Send data to API, await response
+      window.location.href = '/Xplore';
+    } catch (error) {
+      console.log(error)  // Redirect to an error page
+    }
+  };
   return (
     // <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
     <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-1 xl:min-h-[800px]">
@@ -20,31 +40,26 @@ export default function IndexPage() {
               Enter your X handle below.
             </p>
           </div>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              {/*<Label htmlFor="handle">Handle</Label>*/}
-              <Input
-                id="handle"
-                type="text"
-                placeholder="@laptopcrust"
-                required
-              />
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                {/*<Label htmlFor="handle">Handle</Label>*/}
+                <Input
+                  id="handle"
+                  type="text"
+                  placeholder="@laptopcrust"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Explore
+              </Button>
             </div>
-            <Button type="submit" className="w-full">
-              Explore
-            </Button>
-          </div>
+          </form>
         </div>
       </div>
-      {/*<div className="hidden bg-muted lg:block">*/}
-      {/*  <Image*/}
-      {/*    src="/placeholder.svg"*/}
-      {/*    alt="Image"*/}
-      {/*    width="1920"*/}
-      {/*    height="1080"*/}
-      {/*    className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"*/}
-      {/*  />*/}
-      {/*</div>*/}
     </div>
-  )
+)
 }
+
+

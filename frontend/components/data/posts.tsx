@@ -11,27 +11,35 @@ export interface Tweet {
 
 export const tweets: Tweet[] = [
   {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: "$GMale",
-    handle: "laptopcrust",
+    created_at: "Today at 3:32 PM",
+    id: "laptopcrust",
+    handle: "$GMale",
+    profile_image_url: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+    username: "laptopcrust",
     content: "thinkin of my next tweet",
-    timestamp: "Today at 3:32 PM",
-    likes: 0
   },
   {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: 'Twitter',
-    handle: 'Twitter',
-    content: 'Happy 3rd anniversary #TBT! See how "Throwback Thursday" cemented its status as a weekly Twitter tradition:',
-    timestamp: '6:26 PM - Apr 30, 2015',
-    likes: 0
+    created_at: "Today at 3:32 PM",
+    id: "laptopcrust",
+    handle: "$GMale",
+    profile_image_url: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+    username: "laptopcrust",
+    content: "thinkin of my next tweet",
   },
   {
-    profilePic: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
-    userName: "$GMale",
-    handle: "laptopcrust",
+    created_at: "Today at 3:32 PM",
+    id: "laptopcrust",
+    handle: "$GMale",
+    profile_image_url: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+    username: "laptopcrust",
     content: "thinkin of my next tweet",
-    timestamp: "Today at 3:32 PM",
-    likes: 0
+  },
+  {
+    created_at: "Today at 3:32 PM",
+    id: "laptopcrust",
+    handle: "$GMale",
+    profile_image_url: "https://images.unsplash.com/photo-1465869185982-5a1a7522cbcb?auto=format&fit=crop&w=300&q=80",
+    username: "laptopcrust",
+    content: "thinkin of my next tweet",
   },
 ]

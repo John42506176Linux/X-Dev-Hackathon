@@ -91,7 +91,8 @@ export function List(userID) {
 
   const fetchTopics = async () => {
     console.log("Sanity Tests")
-    const baseUrl = "http://localhost:8000/initial_topics/3293358400"
+    // const baseUrl = "http://localhost:8000/initial_topics/3293358400"
+    const baseUrl = "http://localhost:8000/get_new_data/3293358400"
     try {
       const response = await fetch("http://localhost:8000/initial_topics/3293358400");
 
@@ -112,7 +113,7 @@ export function List(userID) {
   };
 
   useEffect(() => {
-    const t = setInterval(() => set(shuffle), 10000)
+    const t = setInterval(() => set(shuffle), 14000)
     fetchTopics()
     return () => clearInterval(t)
   }, [setTopics,topics])
@@ -144,7 +145,7 @@ export function List(userID) {
       ))}
     </div>
   )
-  }
+}
 
 class TopicBlock extends React.Component<({
   topic: Topic,
@@ -169,21 +170,21 @@ class TopicBlock extends React.Component<({
           </CardHeader>
           <CardContent>
             <div className="flex w-max space-x-4 p-4">
-                <figure key={topic.top_image} className="shrink-0">
-                  <div className="overflow-hidden rounded-md">
-                    <Image
-                      src={topic.top_image}
-                      // alt={`Photo by ${artwork.artist}`}
-                      /*set w-[250px] to a variable that updates for desktop + mobile*/
-                      className="space-y-3 h-[225px] w-[225px]"
-                      width={225}
-                      height={225}
-                    />
-                  </div>
-                  {/*<figcaption className="pt-2 text-xs text-muted-foreground">*/}
-                  {/*  Photo by{" "}<span className="font-semibold text-foreground">{}</span>*/}
-                  {/*</figcaption>*/}
-                </figure>
+              <figure key={topic.top_image} className="shrink-0">
+                <div className="overflow-hidden rounded-md">
+                  <Image
+                    src={topic.top_image}
+                    alt={topic.top_image}
+                    /*set w-[250px] to a variable that updates for desktop + mobile*/
+                    className="space-y-3 h-[225px] w-[225px]"
+                    width={225}
+                    height={225}
+                  />
+                </div>
+                {/*<figcaption className="pt-2 text-xs text-muted-foreground">*/}
+                {/*  Photo by{" "}<span className="font-semibold text-foreground">{}</span>*/}
+                {/*</figcaption>*/}
+              </figure>
 
 
               {topic.top_tweets.map((tweet) => (
